@@ -6,7 +6,9 @@ annotated-types
 anyio
 arrow
 asgiref
-attrsAutomatbcrypt
+attrs
+Automat
+bcrypt
 blinker
 branca
 cachetools
