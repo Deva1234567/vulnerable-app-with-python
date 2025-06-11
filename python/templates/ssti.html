@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SSTI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}"/>
+
+  <style>
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-container {
+      background-color: #1f2937;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-container {
+      transform: translateY(0);
+    }
+
+    .modal-header, .modal-footer, .modal-content {
+      padding: 1.5rem;
+    }
+
+    .modal-header {
+      border-bottom: 1px solid #374151;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-footer {
+      border-top: 1px solid #374151;
+      display: flex;
+      justify-content: flex-end;
+    }
+  </style>
+</head>
+<body class="dark min-h-screen flex flex-col">
+  <nav class="navbar">
+    <div class="navbar-container flex flex-col items-center">
+      <h1 class="text-2xl font-semibold text-white mb-4 text-center">Vulnerable App</h1>
+      <div class="navbar-tabs flex flex-wrap justify-center gap-4">
+        <a href="/getting-started" class="nav-tab">Getting Started</a>
+        <a href="/" class="nav-tab">Login</a>
+        <a href="/dashboard" class="nav-tab">Dashboard</a>
+        <a href="/comment" class="nav-tab">Comments</a>
+        <a href="/transfer" class="nav-tab">Transfer</a>
+        <a href="/upload" class="nav-tab">Upload</a>
+        <a href="/profile/1" class="nav-tab">Profile</a>
+        <a href="/ssrf" class="nav-tab">SSRF</a>
+        <a href="/xxe" class="nav-tab">XXE</a>
+        <a href="/deserialize" class="nav-tab">Deserialize</a>
+        <a href="/reflected-xss" class="nav-tab">Reflected XSS</a>
+        <a href="/broken-auth" class="nav-tab">Broken Auth</a>
+        <a href="/dom-xss" class="nav-tab">DOM XSS</a>
+        <a href="/ssti" class="nav-tab bg-blue-600 text-white underline">SSTI</a>
+        <a href="/csrf" class="nav-tab">CSRF</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mx-auto flex-grow px-4 py-8">
+    <div class="card">
+      <h1 class="text-3xl font-semibold mb-2 text-gray-200">Server-Side Template Injection (SSTI)</h1>
+      <p class="text-gray-400 mb-2">SSTI Vulnerability: Allows arbitrary code execution through unsanitized template rendering.</p>
+      <p class="text-gray-400 mb-2"><strong>Difficulty:</strong> Advanced</p>
+      <p class="text-gray-400 mb-2"><strong>Severity:</strong> Critical</p>
+      <p class="text-gray-400 mb-2"><strong>Real-World Impact:</strong> Can lead to full server compromise (e.g., Uber SSTI, 2016).</p>
+      <p class="text-gray-400 mb-4"><strong>Reference:</strong> <a href="https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/07-Input_Validation_Testing/18-Testing_for_Server-Side_Template_Injection" class="text-blue-400 hover:underline" target="_blank">OWASP: Testing for SSTI</a></p>
+
+      {% if success %}
+        <div id="success-banner" class="bg-green-900 border-l-4 border-green-500 text-green-300 p-4 mb-4 flex items-center">
+          <span class="mr-2">🎉</span>
+          <p>{{ success }}</p>
+        </div>
+      {% endif %}
+      {% if error %}
+        <p class="text-red-400 font-medium mb-4">{{ error }}</p>
+      {% endif %}
+
+      <form method="POST" action="" class="space-y-6 max-w-md">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <input type="text" name="name" placeholder=" " class="w-full border rounded px-3 py-2 bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+          <label class="text-gray-400">Enter your name</label>
+        </div>
+        <button type="submit" class="w-full bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition-colors">Submit</button>
+      </form>
+
+      {% if name %}
+        <div class="mt-4">
+          <h2 class="text-2xl font-semibold mb-2 text-gray-200">Result</h2>
+          <div class="bg-gray-800 p-4 rounded text-gray-200">
+            <p>Hello, {{ name }}!</p>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="mt-4">
+        <button id="solution-btn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">View Solution</button>
+
+        <div id="solution-modal" class="modal-overlay">
+          <div class="modal-container">
+            <div class="modal-header">
+              <h3 class="text-xl font-semibold text-gray-200">SSTI Solution</h3>
+              
+            </div>
+            <div class="modal-content text-gray-300 space-y-4">
+              <p>1. Enter a malicious template expression like: <code>{{ '{{ 7*7 }}' }}</code></p>
+              <p>2. Submit the form and observe the output (e.g., "Hello, 49!")</p>
+              <p>3. Try more advanced payloads to explore RCE:</p>
+              <pre class="bg-gray-700 p-2 rounded text-gray-200 overflow-x-auto">{{ '{{ "".__class__.__mro__[1].__subclasses__() }}' }}</pre>
+              <p>4. Chain payloads to achieve remote code execution on the server.</p>
+            </div>
+            <div class="modal-footer">
+              <button id="close-modal" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <h2 class="text-xl font-semibold mb-2 text-gray-200">Defensive Coding: Secure Version</h2>
+        <p class="text-gray-400 mb-2">Use template context autoescaping and input sanitization:</p>
+        <pre class="bg-gray-800 p-4 rounded text-gray-200 overflow-x-auto">
+# Vulnerable
+return render_template_string('Hello ' + name)
+
+# Secure
+return render_template('template.html', name=name)  # Auto-escaping enabled
+        </pre>
+      </div>
+
+      {% if ctf_flag and success %}
+        <div class="mt-4">
+          <h2 class="text-xl font-semibold mb-2 text-gray-200">CTF Flag</h2>
+          <p class="text-green-400">{{ ctf_flag }}</p>
+        </div>
+      {% endif %}
+
+      <div class="mt-4">
+        <a href="/reset/ssti" class="inline-block px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">Reset Challenge</a>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-gray-800 text-white text-center py-4 mt-auto">
+    <p>© 2025 Vulnerable Web App. All rights reserved.</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const modal = document.getElementById('solution-modal');
+      const openBtn = document.getElementById('solution-btn');
+      const closeBtns = [
+        document.getElementById('close-modal'),
+        document.getElementById('modal-close-btn')
+      ];
+
+      openBtn.addEventListener('click', () => {
+        modal.classList.add('active');
+      });
+
+      closeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          modal.classList.remove('active');
+        });
+      });
+
+      // Auto-hide success message
+      const successBanner = document.getElementById('success-banner');
+      if (successBanner) {
+        setTimeout(() => {
+          successBanner.style.display = 'none';
+        }, 4000);
+      }
+    });
+  </script>
+</body>
+</html>
