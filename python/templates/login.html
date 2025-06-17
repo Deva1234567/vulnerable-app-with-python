@@ -12,29 +12,31 @@
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body class="dark min-h-screen flex flex-col">
-    <nav class="navbar">
-        <div class="navbar-container flex flex-col items-center">
-            <h1 class="text-2xl font-semibold text-white mb-4 text-center">Vulnerable App</h1>
-            <div class="navbar-tabs flex flex-wrap justify-center gap-4">
-              
-              <a href="/getting-started" class="nav-tab">Getting Started</a>
-              <a href="/" class="nav-tab bg-blue-600 text-white underline">Login</a>
-              <a href="/dashboard" class="nav-tab">Dashboard</a>
-              <a href="/comment" class="nav-tab">Comments</a>
-              <a href="/transfer" class="nav-tab">Transfer</a>
-              <a href="/upload" class="nav-tab">Upload</a>
-              <a href="/profile/1" class="nav-tab">Profile</a>
-              <a href="/ssrf" class="nav-tab">SSRF</a>
-              <a href="/xxe" class="nav-tab">XXE</a>
-              <a href="/deserialize" class="nav-tab">Deserialize</a>
-              <a href="/reflected-xss" class="nav-tab">Reflected XSS</a>
-              <a href="/broken-auth" class="nav-tab">Broken Auth</a>
-              <a href="/dom-xss" class="nav-tab">DOM XSS</a>
-              <a href="/ssti" class="nav-tab">SSTI</a>
-              <a href="/csrf" class="nav-tab ">CSRF</a>
-            </div>
+    
+  <nav class="navbar">
+    <div class="navbar-container flex flex-col items-center">
+        <h1 class="text-2xl font-semibold text-white mb-4 text-center"> Vulnerable Web Playground</h1>
+        <div class="navbar-tabs flex flex-wrap justify-center gap-4">
+            <a href="/getting-started" class="nav-tab">Getting Started</a>
+            <a href="/" class="nav-tab bg-blue-600 text-white ">Login</a>
+            <a href="/dashboard" class="nav-tab ">Dashboard</a>
+            <a href="/comment" class="nav-tab">Comments</a>
+            <a href="/transfer" class="nav-tab">Transfer</a>
+            <a href="/upload" class="nav-tab">Upload</a>
+            <a href="/profile/1" class="nav-tab">Profile</a>
+            <a href="/ssrf" class="nav-tab">SSRF</a>
+            <a href="/xxe" class="nav-tab">XXE</a>
+            <a href="/deserialize" class="nav-tab">Deserialize</a>
+            <a href="/reflected-xss" class="nav-tab">Reflected XSS</a>
+            <a href="/broken-auth" class="nav-tab">Broken Auth</a>
+            <a href="/dom-xss" class="nav-tab">DOM XSS</a>
+            <a href="/ssti" class="nav-tab">SSTI</a>
+            <a href="/csrf" class="nav-tab">CSRF</a>
+            <a href="/logout" class="nav-tab">Logout</a>
         </div>
-    </nav>
+    </div>
+</nav>
+    
     <div class="container mx-auto flex-grow">
         <div class="card">
             <h1 class="text-3xl font-semibold mb-2 text-gray-200">Login</h1>
