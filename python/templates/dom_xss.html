@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOM-based XSS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body class="dark min-h-screen flex flex-col">
+    <nav class="navbar">
+        <div class="navbar-container flex flex-col items-center">
+            <h1 class="text-2xl font-semibold text-white mb-4 text-center"> Vulnerable Web Playground</h1>
+            <div class="navbar-tabs flex flex-wrap justify-center gap-4">
+                <a href="/getting-started" class="nav-tab">Getting Started</a>
+                <a href="/" class="nav-tab">Login</a>
+                <a href="/dashboard" class="nav-tab ">Dashboard</a>
+                <a href="/comment" class="nav-tab">Comments</a>
+                <a href="/transfer" class="nav-tab">Transfer</a>
+                <a href="/upload" class="nav-tab">Upload</a>
+                <a href="/profile/1" class="nav-tab">Profile</a>
+                <a href="/ssrf" class="nav-tab">SSRF</a>
+                <a href="/xxe" class="nav-tab">XXE</a>
+                <a href="/deserialize" class="nav-tab">Deserialize</a>
+                <a href="/reflected-xss" class="nav-tab">Reflected XSS</a>
+                <a href="/broken-auth" class="nav-tab">Broken Auth</a>
+                <a href="/dom-xss" class="nav-tab bg-blue-600 text-white ">DOM XSS</a>
+                <a href="/ssti" class="nav-tab">SSTI</a>
+                <a href="/csrf" class="nav-tab">CSRF</a>
+                <a href="/logout" class="nav-tab">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto flex-grow">
+        <div class="card">
+            <h1 class="text-3xl font-semibold mb-2 text-gray-200">DOM-based XSS</h1>
+            <p class="text-gray-400 mb-2">Vulnerability: DOM-based Cross-Site Scripting.</p>
+            <p class="text-gray-400 mb-2"><strong>Difficulty:</strong> Medium</p>
+            <p class="text-gray-400 mb-2"><strong>Severity:</strong> High</p>
+            <p class="text-gray-400 mb-2"><strong>Real-World Impact:</strong> Can lead to session hijacking or data theft (e.g., PayPal XSS, 2016).</p>
+            <p class="text-gray-400 mb-2"><strong>Reference:</strong> <a href="https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/11-Client_Side_Testing/01-Testing_for_DOM-based_Cross_Site_Scripting" class="text-blue-400 hover:underline">OWASP: Testing for DOM-based XSS</a></p>
+            <p class="text-gray-400 mb-4"><strong>Mitigation:</strong> Sanitize user input before injecting it into the DOM and use safe DOM manipulation methods.</p>
+
+            {% if success %}
+                <div id="success-banner" class="bg-green-900 border-l-4 border-green-500 text-green-300 p-4 mb-4 flex items-center">
+                    <span class="mr-2">🎉</span>
+                    <p>{{ success }}</p>
+                </div>
+            {% endif %}
+            {% if error %}
+                <p class="text-red-400 font-medium mb-4">{{ error }}</p>
+            {% endif %}
+
+            <div class="mb-4">
+                <h2 class="text-xl font-semibold mb-2 text-gray-200">Theory: DOM-based XSS</h2>
+                <p class="text-gray-400">This page extracts the URL hash and renders it in the DOM without sanitization, allowing JavaScript code execution. The hash is the part of the URL after the '#' symbol (e.g., #message=your_input).</p>
+            </div>
+
+            <div class="mb-4">
+                <h2 class="text-xl font-semibold mb-2 text-gray-200">Message from URL Hash</h2>
+                <p class="text-gray-400 mb-2">The message below is extracted from the URL hash. Try adding a hash like <code>#message=your_input</code> to the URL.</p>
+                <div id="message" class="bg-gray-800 p-4 rounded text-gray-200">No message provided</div>
+            </div>
+
+            <div class="mt-4">
+                <button id="open-solution" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">Open Solution</button>
+                
+                <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-content hidden z-50">
+                    <div class="bg-gray-800 rounded-lg w-full max-w-xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl border border-purple-600">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-200">📘 Solution Walkthrough</h2>
+                        
+                        <div class="text-gray-300 space-y-4">
+                            <p>1. Modify the URL to include a malicious hash payload:</p>
+                            <pre class="bg-gray-700 p-2 rounded text-gray-200">/dom-xss?hash=message=<script>alert('DOM-XSS')</script>#message=<script>alert('DOM-XSS')</script></pre>
+                            <p>2. The hash part (<code>#message=<script>alert('DOM-XSS')</script></code>) will be extracted and rendered in the DOM, executing the script.</p>
+                            <p>3. The query parameter (<code>?hash=message=<script>alert('DOM-XSS')</script></code>) ensures the app detects the exploit.</p>
+                            <p>4. Observe the alert pop-up in the browser and the success message on the page.</p>
+                        </div>
+                    
+                        <div class="mt-6 text-right">
+                            <button id="close-modal" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h2 class="text-xl font-semibold mb-2 text-gray-200">Defensive Coding: Secure Version</h2>
+                <p class="text-gray-400 mb-2">Sanitize user input and use safe DOM manipulation:</p>
+                <pre class="bg-gray-800 p-4 rounded text-gray-200">
+# Vulnerable
+document.getElementById('message').innerHTML = message;
+
+# Secure
+const sanitizedMessage = DOMPurify.sanitize(message);
+document.getElementById('message').textContent = sanitizedMessage;</pre>
+            </div>
+
+            {% if ctf_flag and success %}
+                <div class="mt-4">
+                    <h2 class="text-xl font-semibold mb-2 text-gray-200">CTF Flag</h2>
+                    <p class="text-green-400">{{ ctf_flag }}</p>
+                </div>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="/reset/dom_xss" class="inline-block px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">Reset Challenge</a>
+            </div>
+        </div>
+    </div>
+    <footer class="bg-gray-800 text-white text-center py-4 mt-auto">
+        <p class="text-center">© 2025 Vulnerable Web App. All rights reserved.</p>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Success banner auto-hide
+            const successBanner = document.getElementById('success-banner');
+            if (successBanner) {
+                setTimeout(() => {
+                    successBanner.classList.add('hidden');
+                }, 5000);
+            }
+
+            // Modal functionality
+            const modal = document.getElementById('modal');
+            document.getElementById('open-solution').addEventListener('click', () => {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+            document.getElementById('close-modal').addEventListener('click', () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            });
+
+            // DOM-based XSS vulnerability: Extract and render the hash unsafely
+            const hash = window.location.hash.substring(1); // Remove the '#' prefix
+            const params = new URLSearchParams(hash);
+            const message = params.get('message') || 'No message provided';
+            // Inject the message into the DOM without sanitization (vulnerable)
+            document.getElementById('message').innerHTML = message;
+        });
+    </script>
+</body>
+</html>
