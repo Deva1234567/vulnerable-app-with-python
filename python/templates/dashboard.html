@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <style>
+    .glow-border {
+      box-shadow: 0 0 20px 5px #4ade80;
+      transition: box-shadow 0.5s ease-in-out;
+    }
+  </style>
+</head>
+<body class="dark min-h-screen flex flex-col">
+  <nav class="navbar">
+    <div class="navbar-container flex flex-col items-center">
+      <h1 class="text-2xl font-semibold text-white mb-4 text-center">Vulnerable Web Playground</h1>
+      <div class="navbar-tabs flex flex-wrap justify-center gap-4">
+        <a href="/getting-started" class="nav-tab">Getting Started</a>
+        <a href="/" class="nav-tab">Login</a>
+        <a href="/dashboard" class="nav-tab bg-blue-600 text-white underline">Dashboard</a>
+        <a href="/comment" class="nav-tab">Comments</a>
+        <a href="/transfer" class="nav-tab">Transfer</a>
+        <a href="/upload" class="nav-tab">Upload</a>
+        <a href="/profile/1" class="nav-tab">Profile</a>
+        <a href="/ssrf" class="nav-tab">SSRF</a>
+        <a href="/xxe" class="nav-tab">XXE</a>
+        <a href="/deserialize" class="nav-tab">Deserialize</a>
+        <a href="/reflected-xss" class="nav-tab">Reflected XSS</a>
+        <a href="/broken-auth" class="nav-tab">Broken Auth</a>
+        <a href="/dom-xss" class="nav-tab">DOM XSS</a>
+        <a href="/ssti" class="nav-tab">SSTI</a>
+        <a href="/csrf" class="nav-tab">CSRF</a>
+        <a href="/logout" class="nav-tab">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mx-auto flex-grow">
+    <div class="card">
+      <h1 class="text-3xl font-semibold mb-2 text-gray-200">Dashboard</h1>
+      <p class="text-gray-400 mb-4">Welcome, {{ session['user'] }}! Here's your progress in the CTF challenges.</p>
+
+      <div id="progress-summary" class="mb-4">
+        <h2 class="text-2xl font-semibold mb-2 text-gray-200">Progress Summary</h2>
+        <div class="bg-gray-800 p-4 rounded" id="scoreBox">
+          <p class="text-gray-200">Total Score: {{ total_score }} / {{ max_score }} points</p>
+          <p class="text-gray-200">Challenges Completed: {{ completed_challenges }} / {{ total_challenges }}</p>
+          <p class="text-gray-200">Completion: {{ '%.2f' | format(completion_percentage) }}%</p>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <h3 class="text-xl font-semibold text-gray-200">Progress Chart</h3>
+        <div class="bg-gray-800 p-4 rounded">
+          <canvas id="progressChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <h3 class="text-xl font-semibold text-gray-200">Completed Challenges:</h3>
+        {% if progress %}
+        <ul class="list-disc list-inside text-gray-400">
+          {% for row in progress %}
+          <li>{{ challenge_display_names.get(row['challenge'], row['challenge']) }} ({{ row['score'] }} points) ✔ Completed</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-gray-400">No challenges completed yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="mt-4">
+        <h3 class="text-xl font-semibold text-gray-200">Recent Activity:</h3>
+        {% if logs %}
+        <ul class="list-disc list-inside text-gray-400">
+          {% for log in logs %}
+          <li>[{{ log['timestamp'] }}] {{ log['user'] }}: {{ log['action'] }} - {{ log['details'] }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-gray-400">No recent activity.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-gray-800 text-white text-center py-4 mt-auto">
+    <p class="text-center">© 2025 Vulnerable Web App. All rights reserved.</p>
+  </footer>
+
+  <!-- Victory Sound -->
+  <audio id="victorySound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_6a3d8b68c3.mp3" preload="auto"></audio>
+
+  <!-- Celebration Modal -->
+  <div id="celebrationModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+    <div class="bg-white text-black p-8 rounded-xl shadow-xl text-center max-w-md">
+      <h2 class="text-3xl text-black font-bold mb-4">🎉 Congratulations!</h2>
+      <p class="text-lg">You've reached 300 points or completed all challenges. Great job!</p>
+      <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('progressChart').getContext('2d');
+      const totalScore = {{ total_score }};
+      const maxScore = {{ max_score }};
+      const completedChallenges = {{ completed_challenges }};
+      const totalChallenges = {{ total_challenges }};
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Completed', 'Remaining'],
+          datasets: [{
+            label: 'Challenges',
+            data: [completedChallenges, totalChallenges - completedChallenges],
+            backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+            borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Number of Challenges' }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Challenge Completion (as of 2025-06-17 09:21:00 IST)'
+            }
+          }
+        }
+      });
+
+      if (totalScore >= 300 || completedChallenges === totalChallenges) {
+        celebrate();
+      }
+    });
+
+    function celebrate() {
+      const duration = 5000;
+      const end = Date.now() + duration;
+
+      // Central bomb burst
+      const bombInterval = setInterval(() => {
+        confetti({
+          particleCount: 100,
+          spread: 90,
+          origin: { x: 0.5, y: 0.5 },
+          startVelocity: 60,
+          scalar: 1.2
+        });
+      }, 700);
+
+      // Side bursts
+      (function frame() {
+        confetti({ particleCount: 7, angle: 60, spread: 55, origin: { x: 0 } });
+        confetti({ particleCount: 7, angle: 120, spread: 55, origin: { x: 1 } });
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        } else {
+          clearInterval(bombInterval);
+        }
+      })();
+
+      document.getElementById('celebrationModal').classList.remove('hidden');
+      document.getElementById('victorySound').play();
+      document.getElementById('scoreBox').classList.add('glow-border');
+    }
+
+    function closeModal() {
+      document.getElementById('celebrationModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
